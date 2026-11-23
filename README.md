@@ -2,27 +2,52 @@
 
 A **CLI particle accelerator simulator** written in **Rust** that trades **real CPU compute** (SHA-256 cryptographic hashing + $4\times 4$ relativistic Lorentz matrix FMA operations / GFLOPS) for relativistic particle velocity ($\beta = v/c$, Lorentz factor $\gamma$, beam energy in $\text{TeV}$) and **real statistical discovery probabilities** (Poisson collision rates, Gaussian cavity phase jitter, Breit-Wigner resonance curves, and $5\sigma$ significance thresholds) to uncover quantum particles and anomalies.
 
-Designed around a **two-process architecture** connected over instant TCP IPC (`127.0.0.1:7878`):
-1. **Window 1 — `collider-engine` *(Mouse-Clickable Engine Control Deck & Daemon)***: Runs the real multi-threaded CPU benchmark pool, simulates relativistic kinematics and $5\sigma$ quantum physics, saves discoveries to disk, and features a **mouse-clickable TUI Control Deck** where you can click buttons to allocate CPU threads/intensity, switch acceleration modes, auto-lock RF cavity harmonics, and fire supercritical capacitor bursts.
-2. **Window 2 — `collider-viz` *(Separate High-FPS CLI Animation Visualizer)***: Connects to the running engine from a second terminal and renders a live **Braille TUI animation** featuring multi-bunch counter-rotating proton beams, glowing 36-sector calorimeter towers, curved solenoid particle tracks with secondary boson decay forks ($Z^0 \to \mu^+\mu^-$), and 3 clickable camera views (including a live **Breit-Wigner RF Resonance Oscilloscope**).
+Designed around a **multi-process architecture** connected over instant TCP IPC (`127.0.0.1:7878`), plus a native **macOS Menu Bar Guardian & `.app` Bundle**:
+1. **macOS Menu Bar Guardian & `Local Collider.app` *(Native AppKit Status Bar & Double-Click Launcher)***:
+   - Displays a persistent icon in the top-right macOS Menu Bar showing live resource consumption right next to the button (`⚛ 26% CPU · 18.4 TeV` when running, or `⚛ OFF · 0% CPU` when stopped) so there is zero risk of leaving CPU threads running unintentionally in the background.
+   - Double-clicking **`Local Collider.app`** in Finder installs the Menu Bar Guardian and automatically opens all **3 Terminal windows**.
+   - Includes one-click menu links to open all 3 terminals (or each terminal individually), throttle CPU usage (Eco / Balanced / Overdrive), or **Stop All Acceleration & Close Terminals (0% CPU)**.
+2. **Window 1 — `collider-engine` *(Mouse-Clickable Engine Control Deck & Daemon)***: Runs the real multi-threaded CPU benchmark pool, simulates relativistic kinematics and $5\sigma$ quantum physics, saves discoveries to disk, and features a **mouse-clickable TUI Control Deck** where you can click buttons to allocate CPU threads/intensity, switch acceleration modes, auto-lock RF cavity harmonics, and fire supercritical capacitor bursts.
+3. **Window 2 — `collider-viz` *(Separate High-FPS CLI Animation Visualizer)***: Connects to the running engine from a second terminal and renders a live **Braille TUI animation** featuring multi-bunch counter-rotating proton beams, glowing 36-sector calorimeter towers, curved solenoid particle tracks with secondary boson decay forks ($Z^0 \to \mu^+\mu^-$), and 3 clickable camera views (including a live **Breit-Wigner RF Resonance Oscilloscope**).
 
 ---
 
-## 🏗️ Two-Process Architecture
+## 🏗️ Architecture
 
 ```text
-┌─────────────────────────────────────────────┐       Instant TCP IPC        ┌─────────────────────────────────────────────┐
-│   Window 1: collider-engine (Control Deck)  │ ◄──────────────────────────► │    Window 2: collider-viz (TUI Animation)   │
-│  • Mouse-Clickable TUI Control Buttons      │        127.0.0.1:7878        │  • Multi-Bunch Synchrotron & Calorimeter    │
-│  • Real CPU Compute Pool (SHA-256 + GFLOPS) │                              │  • Curved Helical Tracks & Boson Decay Forks│
-│  • Relativistic Kinematics (β, γ, TeV)      │ ◄──────────────────────────► │  • 3 Camera Modes (Ring / Vertex / RF Scope)│
-│  • Poisson & Breit-Wigner 5σ Discovery Engine│  Window 3: CLI `status`,    │  • Clickable Canvas & Remote IPC Controls   │
-└─────────────────────────────────────────────┘       `tune`, and `codex`    └─────────────────────────────────────────────┘
+                  ┌────────────────────────────────────────────────────────┐
+                  │  macOS Menu Bar Guardian: "⚛ 26% CPU · 18.4 TeV"       │
+                  │  • Live CPU %, kH/s, GFLOPS, RAM & Beam TeV in Menu Bar│
+                  │  • One-click: Open All 3 Terminals (or 1 / 2 / 3)      │
+                  │  • One-click: Stop All Acceleration & Close Terminals  │
+                  └───────────────────────────▲────────────────────────────┘
+                                              │ TCP JSON IPC (127.0.0.1:7878)
+┌─────────────────────────────────────────────┴┐                            ┌─────────────────────────────────────────────┐
+│   Window 1: collider-engine (Control Deck)   │ ◄────────────────────────► │    Window 2: collider-viz (TUI Animation)   │
+│  • Mouse-Clickable TUI Control Buttons       │       127.0.0.1:7878       │  • Multi-Bunch Synchrotron & Calorimeter    │
+│  • Real CPU Compute Pool (SHA-256 + GFLOPS)  │                            │  • Curved Helical Tracks & Boson Decay Forks│
+│  • Relativistic Kinematics (β, γ, TeV)       │ ◄────────────────────────► │  • 3 Camera Modes (Ring / Vertex / RF Scope)│
+│  • Poisson & Breit-Wigner 5σ Discovery Engine│  Window 3: CLI `status`,   │  • Clickable Canvas & Remote IPC Controls   │
+└──────────────────────────────────────────────┘  `tune`, `codex`, `stop`   └─────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🍎 macOS App Bundle (`Local Collider.app`) & Menu Bar Guardian
+
+Even though Local Collider is a CLI/TUI simulator, macOS users can build and double-click **`Local Collider.app`** in Finder (or move it to `/Applications`):
+
+```bash
+# Build the self-contained macOS application bundle ("Local Collider.app")
+./scripts/build_macos_app.sh
+```
+
+- **Double-Click Launch**: Double-clicking `Local Collider.app` starts the Menu Bar Guardian (`⚛ 26% CPU · 18.4 TeV`) and opens all 3 Terminal windows automatically.
+- **Automatic Safety Guardian**: Even if you start `collider-engine` directly from a terminal, it automatically spawns the Menu Bar Guardian in `--status-only` mode so you can always see live CPU consumption in your macOS menu bar and stop the engine with one click (`🛑 Stop All Acceleration & Close Terminals (0% CPU)`).
+
+---
+
+## 🚀 Manual CLI Quick Start
 
 ### 1. Window 1 — Start the Clickable Engine Control Deck
 
@@ -31,7 +56,6 @@ cargo run --release --bin collider-engine -- --threads 4 --intensity 80
 ```
 
 - **Fully Mouse-Clickable**: Click any button in Window 1 (`[-1 THREAD]`, `[+1 THREAD]`, `[MAX CORES]`, `[CPU 25%..100%]`, the 4 Acceleration Mode cards, `[AUTO-LOCK RF]`, `[FIRE SUPERCRITICAL PULSE BURST]`, or any row in the **Quantum Codex**) to tune the accelerator in real time!
-- *(Optional headless mode for scripts/servers: pass `--headless`)*
 
 ### 2. Window 2 — Launch the Separate TUI Collider Animation
 
@@ -46,9 +70,7 @@ cargo run --release --bin collider-viz
   - **`[2] Vertex & Calorimeter Zoom`**: High-magnification view of the inner Silicon Vertex Tracker showing opposing beam pinch, secondary boson decay forks, and calorimeter energy deposition.
   - **`[3] RF Breit-Wigner Scope`**: Dual-trace live oscilloscope plotting the animated RF cavity standing wave against the target particle's **Breit-Wigner resonance peak**.
 
-### 3. Window 3 (Optional) — CLI Telemetry, Remote Tuning & Codex
-
-Query or tune the accelerator from any terminal (works both while the engine is online and offline via saved disk state):
+### 3. Window 3 (Optional) — CLI Telemetry, Remote Tuning, Codex & Emergency Stop
 
 ```bash
 # View live engine telemetry (or saved disk snapshot if offline)
@@ -59,23 +81,10 @@ cargo run --release --bin local-collider -- tune --mode quantum --auto-lock-rf -
 
 # Inspect the 12-tier 5σ Quantum Discovery Codex
 cargo run --release --bin local-collider -- codex
+
+# Immediately save state and stop all CPU acceleration (0% CPU)
+cargo run --release --bin local-collider -- stop
 ```
-
----
-
-## ⚙️ Core Mechanics: "How Much & How You Accelerate"
-
-1. **How Much You Accelerate (Real CPU Compute $\to$ Relativistic Velocity)**:
-   - Active worker threads execute real **SHA-256** rounds coupled with **4D Lorentz matrix FMA transformations**.
-   - Measured **kH/s** and **GFLOPS** pump relativistic momentum into the storage ring, increasing beam energy ($\text{TeV}$), Lorentz factor ($\gamma = 1 + E / m_p c^2$), and pushing velocity $\beta = v/c = \sqrt{1 - 1/\gamma^2}$ closer to the speed of light (measured in **"nines of $c$"**, e.g. $0.999999999c$).
-   - Hardware SHA-256 digests continuously re-seed the statistical collision RNG with real CPU entropy.
-
-2. **How You Accelerate (4 Modes + RF Harmonic Resonance + Quadrupole Focus + Capacitor)**:
-   - **`Stable RF Linac` (`linac`)**: $98\%$ phase stability, ideal for light leptons/mesons and initial calibration.
-   - **`Harmonic Synchrotron Ring` (`synchrotron`)**: Balanced magnetic storage ring with $1.65\times$ collision luminosity.
-   - **`Laser Plasma Wakefield` (`plasma`)**: $2.40\times$ peak $\text{TeV}$ energy multiplier with higher phase entropy.
-   - **`Quantum Vacuum Resonance` (`quantum`)**: Modulates vacuum harmonics to boost sub-threshold quantum tunneling and exotic drop rates by $2.85\times$.
-   - **Breit-Wigner RF Harmonic Tuning ($\text{GHz}$)**: Each quantum target has a resonant frequency. Matching the RF cavity harmonic to the target's resonance peak (or clicking any row in the Quantum Codex) multiplies cross-section probability and energy transfer.
 
 ---
 

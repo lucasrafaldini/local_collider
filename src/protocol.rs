@@ -86,6 +86,7 @@ pub enum EngineCommand {
     LockOptimalHarmonic,
     TriggerPulseBurst,
     ResetState,
+    Shutdown,
     Batch(Vec<EngineCommand>),
 }
 

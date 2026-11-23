@@ -42,6 +42,7 @@ struct SharedEngineContext {
     physics: AcceleratorPhysicsState,
     latest_snapshot: TelemetrySnapshot,
     max_threads: usize,
+    shutdown_requested: bool,
 }
 
 #[derive(Clone)]
@@ -83,9 +84,15 @@ pub fn run_engine_daemon(cfg: EngineConfig) -> io::Result<()> {
         physics,
         latest_snapshot: initial_snapshot,
         max_threads,
+        shutdown_requested: false,
     }));
 
     let running = Arc::new(AtomicBool::new(true));
+
+    // Automatically ensure the macOS Menu Bar guardian icon is running when starting the engine
+    if cfg.duration_secs.is_none() {
+        spawn_macos_menubar_guardian(&cfg.host, cfg.port, false);
+    }
 
     // Dedicated instant TCP IPC Acceptor thread (0ms accept latency for collider-viz and CLI commands)
     {
@@ -100,8 +107,9 @@ pub fn run_engine_daemon(cfg: EngineConfig) -> io::Result<()> {
                     }
                     if let Ok(stream) = stream_res {
                         let ctx = Arc::clone(&shared_ipc);
+                        let run_flag = Arc::clone(&running_ipc);
                         thread::spawn(move || {
-                            let _ = handle_client_connection(stream, ctx);
+                            let _ = handle_client_connection(stream, ctx, run_flag);
                         });
                     }
                 }
@@ -245,6 +253,13 @@ fn apply_command_locked(guard: &mut SharedEngineContext, cmd: EngineCommand) {
         }
         EngineCommand::ResetState => {
             guard.physics.reset();
+        }
+        EngineCommand::Shutdown => {
+            guard
+                .physics
+                .push_log("Engine shutdown requested. Saving state & halting all CPU threads...".into());
+            guard.physics.save_to_disk();
+            guard.shutdown_requested = true;
         }
         EngineCommand::Batch(cmds) => {
             for sub in cmds {
@@ -1055,6 +1070,7 @@ fn format_nines_short(nines: f64) -> String {
 fn handle_client_connection(
     stream: TcpStream,
     shared: Arc<Mutex<SharedEngineContext>>,
+    running: Arc<AtomicBool>,
 ) -> io::Result<()> {
     stream.set_nonblocking(false)?;
     stream.set_read_timeout(Some(Duration::from_secs(30)))?;
@@ -1075,19 +1091,68 @@ fn handle_client_connection(
             Err(_) => EngineCommand::GetSnapshot,
         };
 
-        let reply_snapshot = {
+        let (reply_snapshot, should_shutdown) = {
             let mut guard = shared.lock().unwrap();
             apply_command_locked(&mut guard, cmd);
-            guard.latest_snapshot.clone()
+            (guard.latest_snapshot.clone(), guard.shutdown_requested)
         };
 
         let mut payload = serde_json::to_string(&reply_snapshot).unwrap_or_default();
         payload.push('\n');
         writer.write_all(payload.as_bytes())?;
         writer.flush()?;
+
+        if should_shutdown {
+            running.store(false, Ordering::Relaxed);
+            break;
+        }
     }
 
     Ok(())
+}
+
+/// Ensures the macOS Menu Bar guardian process (`LocalColliderMenuBar`) is active.
+pub fn spawn_macos_menubar_guardian(host: &str, port: u16, open_terminals_on_launch: bool) {
+    #[cfg(target_os = "macos")]
+    {
+        use std::path::Path;
+        use std::process::{Command, Stdio};
+
+        // Check if LocalColliderMenuBar is already running
+        if let Ok(out) = Command::new("pgrep")
+            .arg("-f")
+            .arg("LocalColliderMenuBar")
+            .output()
+        {
+            if out.status.success() && !out.stdout.is_empty() {
+                return;
+            }
+        }
+
+        let candidates = [
+            "dist/Local Collider.app/Contents/MacOS/LocalColliderMenuBar",
+            "target/release/LocalColliderMenuBar",
+            "target/debug/LocalColliderMenuBar",
+        ];
+
+        for bin in candidates {
+            if Path::new(bin).exists() {
+                let mut cmd = Command::new(bin);
+                cmd.arg("--host")
+                    .arg(host)
+                    .arg("--port")
+                    .arg(port.to_string())
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null());
+                if !open_terminals_on_launch {
+                    cmd.arg("--status-only");
+                }
+                let _ = cmd.spawn();
+                return;
+            }
+        }
+    }
 }
 
 /// Sends a single command to the running engine over TCP and returns the updated TelemetrySnapshot.

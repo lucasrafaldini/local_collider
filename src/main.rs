@@ -1,10 +1,12 @@
 use clap::{Parser, Subcommand};
 use local_collider::engine::{
-    build_offline_snapshot, run_engine_daemon, send_command_once, EngineConfig,
+    build_offline_snapshot, run_engine_daemon, send_command_once, spawn_macos_menubar_guardian,
+    EngineConfig,
 };
 use local_collider::physics::QUANTUM_CATALOG;
 use local_collider::protocol::{AccelerationMode, EngineCommand, DEFAULT_HOST, DEFAULT_PORT};
 use local_collider::viz::{run_tui_visualizer, VizConfig};
+use std::process::Command;
 
 #[derive(Parser)]
 #[command(
@@ -97,6 +99,19 @@ enum Commands {
 
     /// Display the complete 12-tier Quantum Discovery Codex (5σ)
     Codex,
+
+    /// Stop all acceleration immediately (saves state and shuts down the engine daemon)
+    Stop,
+
+    /// Launch the macOS Menu Bar guardian icon with live CPU consumption & 3-terminal launcher
+    Menubar {
+        /// Also open all 3 Terminal windows on launch
+        #[arg(long)]
+        open_terminals: bool,
+    },
+
+    /// Build the self-contained macOS `Local Collider.app` bundle
+    BuildApp,
 }
 
 fn main() -> std::io::Result<()> {
@@ -235,6 +250,44 @@ fn main() -> std::io::Result<()> {
                     status
                 );
                 println!("         └─ {} ({})", spec.description, spec.category);
+            }
+            Ok(())
+        }
+        Commands::Stop => {
+            match send_command_once(&cli.host, cli.port, &EngineCommand::Shutdown) {
+                Ok(_) => {
+                    println!(
+                        "🛑 Shutdown signal sent to engine at {}:{}. State saved & CPU threads stopped (0% CPU).",
+                        cli.host, cli.port
+                    );
+                }
+                Err(_) => {
+                    println!(
+                        "Engine is already stopped on {}:{} (0% CPU).",
+                        cli.host, cli.port
+                    );
+                }
+            }
+            let _ = Command::new("pkill").args(["-f", "collider-engine"]).status();
+            let _ = Command::new("pkill").args(["-f", "collider-viz"]).status();
+            Ok(())
+        }
+        Commands::Menubar { open_terminals } => {
+            spawn_macos_menubar_guardian(&cli.host, cli.port, open_terminals);
+            println!(
+                "⚛ macOS Menu Bar guardian launched! Check the top-right macOS Menu Bar for live CPU & TeV telemetry."
+            );
+            Ok(())
+        }
+        Commands::BuildApp => {
+            let status = Command::new("bash")
+                .arg("scripts/build_macos_app.sh")
+                .status()?;
+            if !status.success() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Failed to build Local Collider.app bundle",
+                ));
             }
             Ok(())
         }
