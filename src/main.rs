@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
-use local_collider::engine::{run_engine_daemon, send_command_once, EngineConfig};
+use local_collider::engine::{
+    build_offline_snapshot, run_engine_daemon, send_command_once, EngineConfig,
+};
 use local_collider::physics::QUANTUM_CATALOG;
 use local_collider::protocol::{AccelerationMode, EngineCommand, DEFAULT_HOST, DEFAULT_PORT};
 use local_collider::viz::{run_tui_visualizer, VizConfig};
@@ -8,14 +10,14 @@ use local_collider::viz::{run_tui_visualizer, VizConfig};
 #[command(
     name = "local-collider",
     version,
-    about = "Simulador de acelerador de partículas em CLI que troca processamento real de CPU por velocidade relativística e descobertas quânticas."
+    about = "CLI particle accelerator simulator that trades real CPU processing for relativistic beam velocity and quantum discoveries."
 )]
 struct Cli {
-    /// Host do servidor IPC do motor
+    /// IPC server host for the engine daemon
     #[arg(long, global = true, default_value = DEFAULT_HOST)]
     host: String,
 
-    /// Porta TCP do servidor IPC do motor
+    /// IPC server TCP port for the engine daemon
     #[arg(short, long, global = true, default_value_t = DEFAULT_PORT)]
     port: u16,
 
@@ -25,67 +27,75 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Inicia o motor/daemon de aceleração (processo 1: consome CPU e calcula colisões quânticas)
+    /// Launch the particle accelerator engine & clickable control deck (Window 1)
     Engine {
-        /// Número inicial de threads de CPU dedicadas às cavidades RF
+        /// Initial number of CPU threads dedicated to RF cavities
         #[arg(short, long, default_value_t = 2)]
         threads: usize,
 
-        /// Intensidade de uso de CPU por thread (5 a 100%)
+        /// CPU compute intensity per thread (5 to 100%)
         #[arg(short, long, default_value_t = 70)]
         intensity: u8,
 
-        /// Modo de aceleração inicial (linac, synchrotron, plasma, quantum)
+        /// Initial acceleration mode (linac, synchrotron, plasma, quantum)
         #[arg(short, long, default_value = "synchrotron")]
         mode: String,
 
-        /// Suprime logs periódicos no terminal do motor
+        /// Run in plain text log mode instead of the interactive clickable TUI control deck
+        #[arg(long)]
+        headless: bool,
+
+        /// Suppress periodic console output in headless mode
         #[arg(short, long)]
         quiet: bool,
 
-        /// Tempo máximo opcional de execução em segundos (útil para benchmarks/testes)
+        /// Optional max runtime in seconds (automatically enables headless mode)
         #[arg(long)]
         duration_secs: Option<u64>,
     },
 
-    /// Inicia o visualizador de animação TUI à parte (processo 2: conecta ao motor via TCP)
+    /// Launch the separate TUI particle collider animation viewer (Window 2)
     Viz {
-        /// Taxa de quadros por segundo da animação em terminal
+        /// Animation refresh rate in frames per second
         #[arg(short, long, default_value_t = 25)]
         fps: u64,
     },
 
-    /// Consulta o status instantâneo do motor em execução via CLI
+    /// Query live telemetry from the running engine (or saved disk state if offline)
     Status,
 
-    /// Ajusta parâmetros do motor em tempo real via linha de comando ("como acelera")
+    /// Tune accelerator parameters in real time over IPC ("how it accelerates")
     Tune {
-        /// Define o número de threads ativas
+        /// Set active CPU thread count
         #[arg(short, long)]
         threads: Option<usize>,
 
-        /// Define a intensidade de CPU (5..=100%)
+        /// Set CPU intensity percentage (5..=100%)
         #[arg(short, long)]
         intensity: Option<u8>,
 
-        /// Altera o modo de aceleração (linac, synchrotron, plasma, quantum)
+        /// Switch acceleration mode (linac, synchrotron, plasma, quantum)
         #[arg(short, long)]
         mode: Option<String>,
 
-        /// Ajusta o harmônico RF em GHz (delta relativo, ex: 0.2 ou -0.1)
+        /// Adjust RF harmonic in GHz by a relative delta (e.g. 0.2 or -0.1)
         #[arg(long, allow_hyphen_values = true)]
         harmonic_delta: Option<f64>,
 
-        /// Ajusta o foco magnético quadrupolar em T/m (delta relativo, ex: 0.15 ou -0.1)
+        /// Lock RF harmonic directly to the next target's resonant frequency
+        #[arg(long)]
+        auto_lock_rf: bool,
+
+        /// Adjust quadrupole magnet focus in T/m by a relative delta (e.g. 0.15 or -0.1)
         #[arg(long, allow_hyphen_values = true)]
         focus_delta: Option<f64>,
 
-        /// Dispara um pulso supercrítico do capacitor
+        /// Fire a supercritical pulse burst from the capacitor
         #[arg(short, long)]
         burst: bool,
     },
 
-    /// Lista o Códice Quântico completo (12 partículas e anomalias) e seu progresso
+    /// Display the complete 12-tier Quantum Discovery Codex (5σ)
     Codex,
 }
 
@@ -96,6 +106,7 @@ fn main() -> std::io::Result<()> {
         threads: 2,
         intensity: 70,
         mode: "synchrotron".into(),
+        headless: false,
         quiet: false,
         duration_secs: None,
     }) {
@@ -103,6 +114,7 @@ fn main() -> std::io::Result<()> {
             threads,
             intensity,
             mode,
+            headless,
             quiet,
             duration_secs,
         } => {
@@ -115,6 +127,7 @@ fn main() -> std::io::Result<()> {
                 initial_intensity: intensity,
                 initial_mode: parsed_mode,
                 quiet,
+                headless,
                 duration_secs,
             })
         }
@@ -124,8 +137,13 @@ fn main() -> std::io::Result<()> {
             fps,
         }),
         Commands::Status => {
-            let snap = send_command_once(&cli.host, cli.port, &EngineCommand::GetSnapshot)?;
-            print_status_report(&snap);
+            match send_command_once(&cli.host, cli.port, &EngineCommand::GetSnapshot) {
+                Ok(snap) => print_status_report(&snap, true),
+                Err(_) => {
+                    let snap = build_offline_snapshot();
+                    print_status_report(&snap, false);
+                }
+            }
             Ok(())
         }
         Commands::Tune {
@@ -133,77 +151,82 @@ fn main() -> std::io::Result<()> {
             intensity,
             mode,
             harmonic_delta,
+            auto_lock_rf,
             focus_delta,
             burst,
         } => {
-            let mut latest = None;
+            let mut batch = Vec::new();
             if let Some(t) = threads {
-                latest = Some(send_command_once(
-                    &cli.host,
-                    cli.port,
-                    &EngineCommand::SetThreads(t),
-                )?);
+                batch.push(EngineCommand::SetThreads(t));
             }
             if let Some(i) = intensity {
-                latest = Some(send_command_once(
-                    &cli.host,
-                    cli.port,
-                    &EngineCommand::SetIntensity(i),
-                )?);
+                batch.push(EngineCommand::SetIntensity(i));
             }
             if let Some(m) = mode {
                 if let Some(parsed) = AccelerationMode::from_slug(&m) {
-                    latest = Some(send_command_once(
-                        &cli.host,
-                        cli.port,
-                        &EngineCommand::SetMode(parsed),
-                    )?);
+                    batch.push(EngineCommand::SetMode(parsed));
                 }
             }
+            if auto_lock_rf {
+                batch.push(EngineCommand::LockOptimalHarmonic);
+            }
             if let Some(dh) = harmonic_delta {
-                latest = Some(send_command_once(
-                    &cli.host,
-                    cli.port,
-                    &EngineCommand::AdjustRfHarmonic(dh),
-                )?);
+                batch.push(EngineCommand::AdjustRfHarmonic(dh));
             }
             if let Some(df) = focus_delta {
-                latest = Some(send_command_once(
-                    &cli.host,
-                    cli.port,
-                    &EngineCommand::AdjustMagnetFocus(df),
-                )?);
+                batch.push(EngineCommand::AdjustMagnetFocus(df));
             }
             if burst {
-                latest = Some(send_command_once(
-                    &cli.host,
-                    cli.port,
-                    &EngineCommand::TriggerPulseBurst,
-                )?);
+                batch.push(EngineCommand::TriggerPulseBurst);
             }
-            let snap = match latest {
-                Some(s) => s,
-                None => send_command_once(&cli.host, cli.port, &EngineCommand::GetSnapshot)?,
+
+            let cmd = if batch.is_empty() {
+                EngineCommand::GetSnapshot
+            } else {
+                EngineCommand::Batch(batch)
             };
-            print_status_report(&snap);
+
+            match send_command_once(&cli.host, cli.port, &cmd) {
+                Ok(snap) => {
+                    println!("✓ Applied tuning commands to running engine at {}:{}.", cli.host, cli.port);
+                    print_status_report(&snap, true);
+                }
+                Err(_) => {
+                    println!(
+                        "⚠ Engine daemon is not currently running on {}:{} (start it in Window 1 with `cargo run --release --bin collider-engine`).",
+                        cli.host, cli.port
+                    );
+                    let snap = build_offline_snapshot();
+                    print_status_report(&snap, false);
+                }
+            }
             Ok(())
         }
         Commands::Codex => {
-            let snap_opt = send_command_once(&cli.host, cli.port, &EngineCommand::GetSnapshot).ok();
+            let (snap, online) =
+                match send_command_once(&cli.host, cli.port, &EngineCommand::GetSnapshot) {
+                    Ok(s) => (s, true),
+                    Err(_) => (build_offline_snapshot(), false),
+                };
             println!("╔══════════════════════════════════════════════════════════════════════════════╗");
-            println!("║  LOCAL COLLIDER :: CÓDICE DE PARTÍCULAS E ANOMALIAS QUÂNTICAS (5σ)           ║");
+            println!(
+                "║  LOCAL COLLIDER :: 5σ QUANTUM DISCOVERY CODEX ({:<27}) ║",
+                if online {
+                    "LIVE ENGINE CONNECTION"
+                } else {
+                    "SAVED DISK STATE"
+                }
+            );
             println!("╚══════════════════════════════════════════════════════════════════════════════╝");
             for spec in QUANTUM_CATALOG {
-                let found = snap_opt
-                    .as_ref()
-                    .and_then(|s| s.discoveries.iter().find(|d| d.id == spec.id));
+                let found = snap.discoveries.iter().find(|d| d.id == spec.id);
                 let status = if let Some(d) = found {
-                    format!("★ DESCOBERTO ({:.2}σ | x{})", d.best_sigma, d.count)
+                    format!("★ DISCOVERED ({:.2}σ | x{})", d.best_sigma, d.count)
                 } else {
-                    "○ NÃO DETECTADO".to_string()
+                    "○ UNDETECTED".to_string()
                 };
                 println!(
-                    "[Tier {}] {:<8} {:<34} | Limiar: {:>6.2} TeV | Harmônico: {:.1} GHz | {}",
+                    "[Tier {}] {:<8} {:<34} | Req: {:>6.2} TeV | RF: {:.1} GHz | {}",
                     spec.tier,
                     spec.symbol,
                     spec.name,
@@ -218,11 +241,16 @@ fn main() -> std::io::Result<()> {
     }
 }
 
-fn print_status_report(snap: &local_collider::protocol::TelemetrySnapshot) {
+fn print_status_report(snap: &local_collider::protocol::TelemetrySnapshot, online: bool) {
+    let badge = if online {
+        format!("ONLINE :: Uptime {}s", snap.uptime_secs)
+    } else {
+        "OFFLINE :: Saved Disk Snapshot".to_string()
+    };
     println!("╭──────────────────────────────────────────────────────────────────────────╮");
     println!(
-        "│ LOCAL COLLIDER :: TELEMETRIA DO MOTOR (Uptime: {:>5}s)                   │",
-        snap.uptime_secs
+        "│ LOCAL COLLIDER :: ENGINE TELEMETRY ({:<36}) │",
+        badge
     );
     println!("├──────────────────────────────────────────────────────────────────────────┤");
     println!(
@@ -234,31 +262,31 @@ fn print_status_report(snap: &local_collider::protocol::TelemetrySnapshot) {
         snap.intensity_pct
     );
     println!(
-        "│ Como Acelera   : {:<32} | Estabilidade: {:>5.1}% │",
+        "│ Accel. Mode    : {:<32} | Stability:   {:>5.1}% │",
         snap.mode.name(),
         snap.beam_stability_pct
     );
     println!(
-        "│ Sintonia RF    : {:>5.2} GHz (Alvo: {:>4.2} GHz | Sintonia: {:>5.1}%) | Ímã: {:.2}T/m│",
+        "│ RF & Magnets   : {:>5.2} GHz (Target {:>4.2} GHz | Align {:>5.1}%) | {:>4.2} T/m │",
         snap.rf_harmonic,
         snap.optimal_harmonic_hint,
         snap.harmonic_alignment_pct,
         snap.magnet_focus
     );
     println!(
-        "│ Cinemática     : E = {:>8.3} TeV (Pico {:>8.3} TeV) | γ = {:>11.1}   │",
+        "│ Kinematics     : E = {:>8.3} TeV (Peak {:>8.3} TeV) | γ = {:>11.1}   │",
         snap.beam_energy_tev, snap.peak_energy_tev, snap.lorentz_gamma
     );
     println!(
-        "│ Velocidade (β) : {:>5.2} noves de c | Colisões/s: {:>9.0} (Total: {}) │",
+        "│ Velocity (β)   : {:>5.2} nines of c | Collisions/s: {:>8.0} (Total: {}) │",
         snap.nines_of_c, snap.collisions_per_sec, snap.total_collisions
     );
     println!(
-        "│ Quântico       : Proximidade {:>5.1}% | Alvo: {} ({:.2}σ / 5.00σ)   │",
+        "│ Quantum 5σ     : Proximity {:>5.1}% | Next: {:<8} ({:.2}σ / 5.00σ)       │",
         snap.quantum_proximity_pct, snap.next_target_symbol, snap.next_target_sigma_progress
     );
     println!(
-        "│ Descobertas    : {}/{} catalogadas | Capacitor de Pulso: {:>5.1}%           │",
+        "│ Discoveries    : {:>2}/{} cataloged  | Pulse Capacitor: {:>5.1}%              │",
         snap.discoveries.len(),
         QUANTUM_CATALOG.len(),
         snap.capacitor_charge_pct

@@ -6,7 +6,7 @@ use local_collider::viz::{run_tui_visualizer, VizConfig};
 #[command(
     name = "collider-viz",
     version,
-    about = "Processo Visualizador TUI à parte do Local Collider: conecta ao collider-engine via TCP e renderiza o anel síncrotron e colisões em tempo real."
+    about = "Window 2 Separate TUI Animation Visualizer for Local Collider: connects to collider-engine over TCP and renders the synchrotron ring, calorimeter jets, and Breit-Wigner oscilloscope."
 )]
 struct Args {
     #[arg(long, default_value = DEFAULT_HOST)]
@@ -15,7 +15,7 @@ struct Args {
     #[arg(short, long, default_value_t = DEFAULT_PORT)]
     port: u16,
 
-    /// Taxa de atualização da animação em quadros por segundo (FPS)
+    /// Animation frame rate in FPS
     #[arg(short, long, default_value_t = 25)]
     fps: u64,
 }

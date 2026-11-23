@@ -10,7 +10,7 @@ use std::fs;
 use std::path::Path;
 
 const PROTON_MASS_TEV: f64 = 0.000_938_272;
-const STATE_FILE: &str = "collider_state.json";
+pub const STATE_FILE: &str = "collider_state.json";
 
 #[derive(Debug, Clone)]
 pub struct QuantumTargetSpec {
@@ -30,164 +30,164 @@ pub struct QuantumTargetSpec {
 pub const QUANTUM_CATALOG: &[QuantumTargetSpec] = &[
     QuantumTargetSpec {
         id: "muon_pair",
-        name: "Par de Múons Relativísticos",
+        name: "Relativistic Muon Pair",
         symbol: "μ⁺μ⁻",
         tier: 1,
-        category: "Modelo Padrão (Léptons)",
+        category: "Standard Model (Leptons)",
         mass_gev: 0.211,
         min_energy_tev: 0.12,
         base_drop_prob_per_collision: 1.2e-4,
         preferred_mode: AccelerationMode::LinearLinac,
         resonant_harmonic: 1.0,
-        description: "Léptons pesados de segunda geração com dilatação temporal observável.",
+        description: "Second-generation heavy leptons exhibiting measurable relativistic time dilation.",
     },
     QuantumTargetSpec {
         id: "jpsi_meson",
-        name: "Méson J/ψ (Charmônio)",
+        name: "J/ψ Charmonium Meson",
         symbol: "J/ψ",
         tier: 1,
-        category: "Modelo Padrão (Hádrons)",
+        category: "Standard Model (Hadrons)",
         mass_gev: 3.0969,
         min_energy_tev: 0.45,
         base_drop_prob_per_collision: 5.5e-5,
         preferred_mode: AccelerationMode::LinearLinac,
         resonant_harmonic: 1.3,
-        description: "Estado ligado quark charm-anticharm que confirmou o modelo de quarks.",
+        description: "Bound charm-anticharm quark state that confirmed the quark model of matter.",
     },
     QuantumTargetSpec {
         id: "z_boson",
-        name: "Bóson Vetorial Z⁰",
+        name: "Z⁰ Electroweak Vector Boson",
         symbol: "Z⁰",
         tier: 2,
-        category: "Bóson de Calibre Eletrofraco",
+        category: "Electroweak Gauge Boson",
         mass_gev: 91.1876,
         min_energy_tev: 1.25,
         base_drop_prob_per_collision: 2.2e-5,
         preferred_mode: AccelerationMode::SynchrotronHarmonic,
         resonant_harmonic: 1.7,
-        description: "Mediador neutro da força nuclear fraca em colisões de alta luminosidade.",
+        description: "Neutral carrier of the weak nuclear force observed in high-luminosity collisions.",
     },
     QuantumTargetSpec {
         id: "higgs_boson",
-        name: "Bóson de Higgs Escalar",
+        name: "Scalar Higgs Boson",
         symbol: "H⁰",
         tier: 2,
-        category: "Quebra Espontânea de Simetria",
+        category: "Spontaneous Symmetry Breaking",
         mass_gev: 125.25,
         min_energy_tev: 2.90,
         base_drop_prob_per_collision: 9.0e-6,
         preferred_mode: AccelerationMode::SynchrotronHarmonic,
         resonant_harmonic: 2.1,
-        description: "Excitação quântica do campo de Higgs responsável pela massa das partículas elementares.",
+        description: "Quantum excitation of the Higgs field responsible for elementary particle mass.",
     },
     QuantumTargetSpec {
         id: "tetraquark_tcc",
-        name: "Tetraquark Duplo-Charmoso",
+        name: "Double-Charm Tetraquark",
         symbol: "Tcc⁺",
         tier: 3,
-        category: "Hádron Exótico Multiquark",
+        category: "Exotic Multiquark Hadron",
         mass_gev: 3.875,
         min_energy_tev: 6.20,
         base_drop_prob_per_collision: 3.8e-6,
         preferred_mode: AccelerationMode::SynchrotronHarmonic,
         resonant_harmonic: 2.4,
-        description: "Configuração quântica exótica de quatro quarks (ccūd̄) de vida longa.",
+        description: "Long-lived exotic four-quark bound quantum state (ccūd̄).",
     },
     QuantumTargetSpec {
         id: "pentaquark_pc",
-        name: "Pentaquark de Valência Charm",
+        name: "Charmonium Pentaquark",
         symbol: "Pc(4457)⁺",
         tier: 3,
-        category: "Hádron Exótico Multiquark",
+        category: "Exotic Multiquark Hadron",
         mass_gev: 4.457,
         min_energy_tev: 11.5,
         base_drop_prob_per_collision: 1.6e-6,
         preferred_mode: AccelerationMode::PlasmaWakefield,
         resonant_harmonic: 2.8,
-        description: "Bárion exótico composto por quatro quarks e um antiquark em forte acoplamento.",
+        description: "Exotic baryon composed of four quarks and one antiquark in strong QCD coupling.",
     },
     QuantumTargetSpec {
         id: "susy_neutralino",
-        name: "Neutralino Supersimétrico",
+        name: "Supersymmetric Neutralino",
         symbol: "χ̃₁⁰",
         tier: 4,
-        category: "Supersimetria (Matéria Escura)",
+        category: "Supersymmetry (Dark Matter)",
         mass_gev: 480.0,
         min_energy_tev: 21.0,
         base_drop_prob_per_collision: 7.2e-7,
         preferred_mode: AccelerationMode::PlasmaWakefield,
         resonant_harmonic: 3.2,
-        description: "Superparceiro fermiônico estável e principal candidato quântico à Matéria Escura.",
+        description: "Lightest stable supersymmetric fermion and prime cold Dark Matter candidate.",
     },
     QuantumTargetSpec {
         id: "leptoquark_lq3",
-        name: "Leptoquark Vetorial de 3ª Geração",
+        name: "3rd-Gen Vector Leptoquark",
         symbol: "LQ₃",
         tier: 4,
-        category: "Grande Unificação (Além do MP)",
+        category: "Grand Unification (Beyond SM)",
         mass_gev: 1450.0,
         min_energy_tev: 38.0,
         base_drop_prob_per_collision: 3.1e-7,
         preferred_mode: AccelerationMode::PlasmaWakefield,
         resonant_harmonic: 3.6,
-        description: "Bóson hipotético que acopla quarks diretamente a léptons violando a universalidade.",
+        description: "Hypothetical gauge boson coupling quarks directly to leptons across generations.",
     },
     QuantumTargetSpec {
         id: "kk_graviton",
-        name: "Gráviton de Kaluza-Klein",
+        name: "Kaluza-Klein Graviton",
         symbol: "G_KK",
         tier: 5,
-        category: "Gravidade Quântica / Dimensões Extras",
+        category: "Quantum Gravity / Extra Dimensions",
         mass_gev: 2900.0,
         min_energy_tev: 68.0,
         base_drop_prob_per_collision: 1.4e-7,
         preferred_mode: AccelerationMode::QuantumResonance,
         resonant_harmonic: 4.0,
-        description: "Modo excitado do gráviton propagando-se em dimensões espaciais extras compactadas.",
+        description: "Excited graviton resonance propagating through compactified extra spatial dimensions.",
     },
     QuantumTargetSpec {
         id: "dirac_monopole",
-        name: "Monopolo Magnético de Dirac",
+        name: "Dirac Magnetic Monopole",
         symbol: "g_D",
         tier: 5,
-        category: "Topologia Quântica de Gauge",
+        category: "Quantum Gauge Topology",
         mass_gev: 4600.0,
         min_energy_tev: 115.0,
         base_drop_prob_per_collision: 6.0e-8,
         preferred_mode: AccelerationMode::QuantumResonance,
         resonant_harmonic: 4.3,
-        description: "Soliton topológico com carga magnética isolada que quantiza a carga elétrica.",
+        description: "Topological gauge soliton carrying isolated magnetic charge that quantizes electric charge.",
     },
     QuantumTargetSpec {
         id: "quantum_foam_condensate",
-        name: "Condensado de Espuma Quântica",
+        name: "Quantum Foam Condensate",
         symbol: "Ψ_foam",
         tier: 6,
-        category: "Anomalia da Escala de Planck",
+        category: "Planck-Scale Spacetime Anomaly",
         mass_gev: 8800.0,
         min_energy_tev: 185.0,
         base_drop_prob_per_collision: 2.5e-8,
         preferred_mode: AccelerationMode::QuantumResonance,
         resonant_harmonic: 4.7,
-        description: "Micro-flutuação espaço-temporal onde a métrica quântica sofre tunelamento coerente.",
+        description: "Coherent spacetime metric fluctuation undergoing macroscopic quantum tunneling.",
     },
     QuantumTargetSpec {
         id: "brane_singularity",
-        name: "Singularidade de Tunelamento de Brana",
+        name: "Brane Tunneling Singularity",
         symbol: "Ω_brane",
         tier: 6,
-        category: "Singularidade Quântica Profunda",
+        category: "Deep Multiverse Singularity",
         mass_gev: 14000.0,
         min_energy_tev: 300.0,
         base_drop_prob_per_collision: 1.0e-8,
         preferred_mode: AccelerationMode::QuantumResonance,
         resonant_harmonic: 4.9,
-        description: "Ruptura local de vácuo quântico com troca de momento através do bulk hiperdimensional.",
+        description: "Localized quantum vacuum rupture exchanging momentum across the hyperdimensional bulk.",
     },
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-struct PersistentColliderSave {
+pub struct PersistentColliderSave {
     pub total_collisions: u64,
     pub luminosity_fb_inv: f64,
     pub accumulated_ring_momentum_tev: f64,
@@ -238,7 +238,15 @@ impl AcceleratorPhysicsState {
 
         if Path::new(STATE_FILE).exists() {
             if let Ok(raw) = fs::read_to_string(STATE_FILE) {
-                if let Ok(saved) = serde_json::from_str::<PersistentColliderSave>(&raw) {
+                if let Ok(mut saved) = serde_json::from_str::<PersistentColliderSave>(&raw) {
+                    // Normalize discovery names/descriptions to current English catalog
+                    for rec in &mut saved.discoveries {
+                        if let Some(spec) = QUANTUM_CATALOG.iter().find(|s| s.id == rec.id) {
+                            rec.name = spec.name.to_string();
+                            rec.category = spec.category.to_string();
+                            rec.description = spec.description.to_string();
+                        }
+                    }
                     state.total_collisions = saved.total_collisions;
                     state.luminosity_fb_inv = saved.luminosity_fb_inv;
                     state.accumulated_ring_momentum_tev =
@@ -251,7 +259,7 @@ impl AcceleratorPhysicsState {
                         }
                     }
                     state.push_log(format!(
-                        "Estado restaurado: {} descobertas quânticas, pico de {:.2} TeV.",
+                        "Restored collider state: {} quantum discoveries, {:.2} TeV peak energy.",
                         state.discoveries.len(),
                         state.peak_energy_tev
                     ));
@@ -261,7 +269,8 @@ impl AcceleratorPhysicsState {
         }
 
         state.push_log(
-            "Anel acelerador inicializado. Injetando feixe de prótons nas cavidades RF...".into(),
+            "Collider ring initialized. Injecting proton bunches into superconducting RF cavities..."
+                .into(),
         );
         state
     }
@@ -295,7 +304,7 @@ impl AcceleratorPhysicsState {
         self.discoveries.clear();
         self.target_sigma_accum = vec![0.0; QUANTUM_CATALOG.len()];
         self.recent_logs.clear();
-        self.push_log("Estado do colisor reiniciado para calibração zero.".into());
+        self.push_log("Collider state reset to zero calibration.".into());
         self.save_to_disk();
     }
 
@@ -307,12 +316,22 @@ impl AcceleratorPhysicsState {
         }
     }
 
+    pub fn lock_optimal_harmonic(&mut self) {
+        let idx = self.next_target_index();
+        let target_harm = QUANTUM_CATALOG[idx].resonant_harmonic;
+        self.rf_harmonic = target_harm;
+        self.push_log(format!(
+            "Auto-locked RF cavity harmonic to {:.2} GHz (resonant with {}).",
+            target_harm, QUANTUM_CATALOG[idx].symbol
+        ));
+    }
+
     pub fn trigger_burst(&mut self) -> bool {
         if self.capacitor_charge_pct >= 25.0 {
             let bonus_ticks = ((self.capacitor_charge_pct / 100.0) * 90.0).round() as u32;
             self.burst_ticks_remaining += bonus_ticks.max(25);
             self.push_log(format!(
-                "PULSO SUPERCRÍTICO ATIVADO! Descarga de {:.0}% do capacitor (+{:.1}s de sobrecarga quântica).",
+                "SUPERCRITICAL PULSE FIRED! Discharged {:.0}% capacitor (+{:.1}s quantum overdrive).",
                 self.capacitor_charge_pct,
                 bonus_ticks as f64 * 0.1
             ));
@@ -320,14 +339,13 @@ impl AcceleratorPhysicsState {
             true
         } else {
             self.push_log(format!(
-                "Capacitor em {:.1}% (mínimo 25% necessário para pulso supercrítico).",
+                "Capacitor at {:.1}% (minimum 25% required for supercritical pulse).",
                 self.capacitor_charge_pct
             ));
             false
         }
     }
 
-    /// Determina o próximo alvo quântico ainda não descoberto (ou o último se todos já foram).
     pub fn next_target_index(&self) -> usize {
         for (idx, spec) in QUANTUM_CATALOG.iter().enumerate() {
             if !self.discoveries.iter().any(|d| d.id == spec.id) {
@@ -337,7 +355,7 @@ impl AcceleratorPhysicsState {
         QUANTUM_CATALOG.len() - 1
     }
 
-    /// Avança um passo de simulação física alimentado pelas métricas reais de CPU.
+    /// Advances one physics simulation step driven by real CPU benchmark metrics.
     pub fn step(
         &mut self,
         dt_secs: f64,
@@ -352,7 +370,6 @@ impl AcceleratorPhysicsState {
         memory_used_mb: u64,
         total_compute_cycles: u64,
     ) -> TelemetrySnapshot {
-        // Mistura a entropia real calculada pelo SHA-256 da CPU no gerador estatístico
         let mut seed_bytes = [0u8; 32];
         for (i, chunk) in seed_bytes.chunks_exact_mut(8).enumerate() {
             let mixed = cpu_entropy
@@ -367,13 +384,11 @@ impl AcceleratorPhysicsState {
         let target_spec = &QUANTUM_CATALOG[target_idx];
         let optimal_harmonic = target_spec.resonant_harmonic;
 
-        // Alinhamento harmônico ("Como acelera": sintonia fina da cavidade RF com a ressonância alvo)
         let harmonic_diff = (self.rf_harmonic - optimal_harmonic).abs();
-        let harmonic_alignment_pct = ((-harmonic_diff * harmonic_diff / 0.45).exp() * 100.0)
-            .clamp(5.0, 100.0);
+        let harmonic_alignment_pct =
+            ((-harmonic_diff * harmonic_diff / 0.45).exp() * 100.0).clamp(5.0, 100.0);
         let harmonic_resonance_boost = 0.75 + 1.45 * (harmonic_alignment_pct / 100.0);
 
-        // Multiplicadores do modo de aceleração ("Como acelera")
         let (mode_energy_mult, mode_luminosity_mult, mode_quantum_mult, base_stability) =
             match self.mode {
                 AccelerationMode::LinearLinac => (1.00, 1.05, 1.00, 98.0),
@@ -382,14 +397,11 @@ impl AcceleratorPhysicsState {
                 AccelerationMode::QuantumResonance => (1.80, 1.30, 2.85, 84.0),
             };
 
-        // Foco magnético dos quadrupolos: aumenta colisões mas exige alinhamento harmônico para manter estabilidade
         let focus_penalty = ((self.magnet_focus - 1.2).max(0.0) * 14.0)
             * (1.0 - (harmonic_alignment_pct / 130.0));
-        let beam_stability_pct = (base_stability - focus_penalty
-            + (harmonic_alignment_pct * 0.08))
-            .clamp(25.0, 99.9);
+        let beam_stability_pct =
+            (base_stability - focus_penalty + (harmonic_alignment_pct * 0.08)).clamp(25.0, 99.9);
 
-        // Sobrecarga de pulso supercrítico do capacitor
         let burst_mult = if self.burst_ticks_remaining > 0 {
             self.burst_ticks_remaining -= 1;
             3.25
@@ -397,12 +409,9 @@ impl AcceleratorPhysicsState {
             1.0
         };
 
-        // Conversão direta de Benchmark de CPU (Hashes/s + GFLOPS) em aceleração do anel
-        // Escala sublinear calibrada para builds debug e --release: mais threads + sintonia RF + tempo = mais TeV
         let raw_compute_score = (hashes_per_sec / 120_000.0) + (gflops * 3.5);
         let compute_power = raw_compute_score.max(0.08).powf(0.72);
 
-        // Acúmulo contínuo de momento no anel (quanto mais tempo e mais CPU você troca, mais o feixe acelera)
         let momentum_gain = compute_power
             * mode_energy_mult
             * harmonic_resonance_boost
@@ -412,14 +421,11 @@ impl AcceleratorPhysicsState {
         self.accumulated_ring_momentum_tev =
             (self.accumulated_ring_momentum_tev + momentum_gain).min(95_000.0);
 
-        // Energia instantânea do feixe em TeV = Potência instantânea de CPU + Momento relativístico acumulado
-        let instant_tev =
-            (compute_power * 0.24 + self.accumulated_ring_momentum_tev)
-                * mode_energy_mult
-                * harmonic_resonance_boost
-                * burst_mult;
+        let instant_tev = (compute_power * 0.24 + self.accumulated_ring_momentum_tev)
+            * mode_energy_mult
+            * harmonic_resonance_boost
+            * burst_mult;
 
-        // Suavização exponencial + flutuação gaussiana térmica real das cavidades RF
         let jitter = Normal::new(1.0, 0.015 * (100.0 - beam_stability_pct) / 100.0)
             .ok()
             .map(|n| n.sample(&mut self.rng).clamp(0.92, 1.12))
@@ -431,18 +437,14 @@ impl AcceleratorPhysicsState {
             self.peak_energy_tev = self.beam_energy_tev;
         }
 
-        // Cinemática relativística real: γ = 1 + E / (m_p c²) e β = v/c = sqrt(1 - 1/γ²)
         let lorentz_gamma = 1.0 + (self.beam_energy_tev / PROTON_MASS_TEV);
         let inv_gamma_sq = 1.0 / (lorentz_gamma * lorentz_gamma);
         let beta = (1.0 - inv_gamma_sq).sqrt();
-        // Número de noves de c: -log10(1 - β) ≈ log10(2 * γ²) para alta precisão numérica
         let nines_of_c = (2.0 * lorentz_gamma * lorentz_gamma).log10().max(1.0);
 
-        // Carregamento do capacitor com os hashes da CPU
         let charge_add = (compute_power * 0.38 * dt_secs).clamp(0.05, 8.0);
         self.capacitor_charge_pct = (self.capacitor_charge_pct + charge_add).min(100.0);
 
-        // Taxa de colisões por segundo governada por Distribuição de Poisson real
         let mean_collisions_per_sec = compute_power
             * 185.0
             * mode_luminosity_mult
@@ -461,21 +463,16 @@ impl AcceleratorPhysicsState {
         };
 
         self.total_collisions = self.total_collisions.saturating_add(step_collisions);
-        // Luminosidade integrada em femtobarns inversos (fb⁻¹)
         self.luminosity_fb_inv += (step_collisions as f64) * 1.2e-5;
 
-        // Cálculo de proximidade quântica e probabilidade estatística de descoberta para cada partícula/anomalia
         let mut best_quantum_drop_chance_per_sec = 0.0;
         let mut any_new_discovery = false;
 
         for (idx, spec) in QUANTUM_CATALOG.iter().enumerate() {
-            // Fator de ativação energética (curva relativística suave + barreira de tunelamento abaixo do limiar)
             let energy_ratio = self.beam_energy_tev / spec.min_energy_tev;
             let energy_factor = if energy_ratio >= 1.0 {
                 1.0 + (energy_ratio - 1.0).ln_1p() * 0.85
             } else {
-                // Tunelamento quântico sub-limiar: decai exponencialmente se a energia for baixa,
-                // mas o modo Ressonância Quântica permite tunelamento próximo ao limiar!
                 let tunnel_alpha = if self.mode == AccelerationMode::QuantumResonance {
                     3.2
                 } else {
@@ -488,9 +485,8 @@ impl AcceleratorPhysicsState {
                 continue;
             }
 
-            // Ressonância Breit-Wigner com o harmônico RF configurado pelo usuário
             let d_harm = self.rf_harmonic - spec.resonant_harmonic;
-            let breit_wigner = 0.35 / (d_harm * d_harm + 0.175); // Pico = 2.0 quando sintonizado
+            let breit_wigner = 0.35 / (d_harm * d_harm + 0.175);
 
             let preferred_mode_bonus = if self.mode == spec.preferred_mode {
                 1.45
@@ -506,8 +502,6 @@ impl AcceleratorPhysicsState {
                 * burst_mult)
                 .clamp(0.0, 0.25);
 
-            // Probabilidade binomial exata de >= 1 evento raro em `step_collisions` colisões:
-            // P(X >= 1) = 1 - (1 - p)^N ≈ 1 - exp(-N * p)
             let expected_events = (step_collisions as f64) * p_single;
             let step_drop_prob = 1.0 - (-expected_events).exp();
             let drop_prob_per_sec = 1.0 - (-expected_events / dt_secs.max(0.01)).exp();
@@ -516,11 +510,9 @@ impl AcceleratorPhysicsState {
                 best_quantum_drop_chance_per_sec = drop_prob_per_sec;
             }
 
-            // Acumula significância estatística (σ) proporcional à razão Sinal / sqrt(Fundo)
             let sigma_gain = (expected_events * 0.42).min(0.85);
             self.target_sigma_accum[idx] = (self.target_sigma_accum[idx] + sigma_gain).min(9.99);
 
-            // Rolagem estatística real alimentada pela entropia da CPU OU atingimento do limiar 5σ padrão do CERN!
             let roll: f64 = self.rng.gen();
             let triggered_by_roll = roll < step_drop_prob;
             let triggered_by_5sigma = self.target_sigma_accum[idx] >= 5.0;
@@ -531,7 +523,6 @@ impl AcceleratorPhysicsState {
                 } else {
                     (5.0 + (-roll.max(1e-12).ln() * 0.18)).clamp(5.0, 8.9)
                 };
-                // Reinicia acumulador de σ para a próxima observação
                 self.target_sigma_accum[idx] = 0.4;
 
                 let now_str = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -562,28 +553,27 @@ impl AcceleratorPhysicsState {
                 if is_first_time {
                     any_new_discovery = true;
                     self.push_log(format!(
-                        "★ DESCOBERTA QUÂNTICA [{:.2}σ]! {} ({}) detectado a {:.2} TeV (p={:.2e})!",
+                        "★ QUANTUM DISCOVERY [{:.2}σ]! {} ({}) detected at {:.2} TeV (p={:.2e})!",
                         measured_sigma, spec.name, spec.symbol, self.beam_energy_tev, step_drop_prob
                     ));
                 } else if spec.tier >= 3 || self.rng.gen_bool(0.25) {
                     self.push_log(format!(
-                        "Evento raro: {} ({}) observado novamente ({:.1}σ @ {:.2} TeV).",
+                        "Rare resonance: {} ({}) observed again ({:.1}σ @ {:.2} TeV).",
                         spec.name, spec.symbol, measured_sigma, self.beam_energy_tev
                     ));
                 }
 
                 self.latest_shower = Some(self.generate_shower(
-                    spec.tier >= 4,
+                    spec.tier >= 3,
                     format!("{} ({}) [{:.1}σ]", spec.name, spec.symbol, measured_sigma),
                 ));
             }
         }
 
-        // Caso não tenha havido chuveiro de descoberta neste frame, gera chuveiros de colisão de fundo
         if self.latest_shower.is_none() || self.rng.gen_bool(0.35) {
             self.latest_shower = Some(self.generate_shower(
                 false,
-                format!("Colisão pp @ {:.2} TeV", self.beam_energy_tev),
+                format!("pp Collision @ {:.2} TeV", self.beam_energy_tev),
             ));
         }
 
@@ -595,8 +585,6 @@ impl AcceleratorPhysicsState {
         let next_spec = &QUANTUM_CATALOG[new_target_idx];
         let next_sigma = self.target_sigma_accum[new_target_idx];
 
-        // Proximidade Quântica Global (0% -> 100%): combina fração do catálogo descoberto,
-        // progresso 5σ do próximo alvo e regime relativístico de Lorentz
         let catalog_progress =
             (self.discoveries.len() as f64 / QUANTUM_CATALOG.len() as f64) * 70.0;
         let target_sigma_contrib = (next_sigma / 5.0).clamp(0.0, 1.0) * 20.0;
@@ -646,17 +634,17 @@ impl AcceleratorPhysicsState {
     fn generate_shower(&mut self, is_quantum_anomaly: bool, label: String) -> CollisionShower {
         self.shower_seq = self.shower_seq.wrapping_add(1);
         let num_tracks = if is_quantum_anomaly {
-            self.rng.gen_range(14..=24)
+            self.rng.gen_range(16..=28)
         } else {
-            self.rng.gen_range(6..=14)
+            self.rng.gen_range(8..=16)
         };
 
         let mut tracks = Vec::with_capacity(num_tracks);
         for _ in 0..num_tracks {
             let angle_rad = self.rng.gen_range(0.0..std::f64::consts::TAU);
-            let curvature = self.rng.gen_range(-0.65..0.65);
-            let speed = self.rng.gen_range(0.55..1.35);
-            let energy_ratio = self.rng.gen_range(0.25..1.0);
+            let curvature = self.rng.gen_range(-0.75..0.75);
+            let speed = self.rng.gen_range(0.55..1.40);
+            let energy_ratio = self.rng.gen_range(0.30..1.0);
             let kind = if is_quantum_anomaly && self.rng.gen_bool(0.45) {
                 TrackKind::QuantumAnomaly
             } else {
@@ -666,12 +654,18 @@ impl AcceleratorPhysicsState {
                     _ => TrackKind::PhotonRay,
                 }
             };
+            let decay_fork_at = if self.rng.gen_bool(if is_quantum_anomaly { 0.45 } else { 0.22 }) {
+                Some(self.rng.gen_range(0.35..0.72))
+            } else {
+                None
+            };
             tracks.push(ShowerTrack {
                 angle_rad,
                 curvature,
                 speed,
                 energy_ratio,
                 kind,
+                decay_fork_at,
             });
         }
 
@@ -717,12 +711,12 @@ mod tests {
     fn test_mode_and_harmonic_resonance_boost() {
         let mut phys_off = AcceleratorPhysicsState::load_or_new();
         phys_off.reset();
-        phys_off.rf_harmonic = 4.9; // Longe da ressonância inicial (1.0)
+        phys_off.rf_harmonic = 4.9;
         let snap_off = phys_off.step(0.5, 500_000.0, 6.0, 42, 1, 4, 8, 80, 50.0, 200, 1000);
 
         let mut phys_on = AcceleratorPhysicsState::load_or_new();
         phys_on.reset();
-        phys_on.rf_harmonic = 1.0; // Exatamente na ressonância do primeiro alvo
+        phys_on.rf_harmonic = 1.0;
         let snap_on = phys_on.step(0.5, 500_000.0, 6.0, 42, 1, 4, 8, 80, 50.0, 200, 1000);
 
         assert!(snap_on.harmonic_alignment_pct > snap_off.harmonic_alignment_pct);

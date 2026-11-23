@@ -6,7 +6,7 @@ use local_collider::protocol::{AccelerationMode, DEFAULT_HOST, DEFAULT_PORT};
 #[command(
     name = "collider-engine",
     version,
-    about = "Processo Daemon/Motor do Local Collider: converte processamento real de CPU em aceleração de partículas e descobertas quânticas."
+    about = "Window 1 Engine Daemon & Clickable Control Deck for Local Collider: converts real CPU compute into particle acceleration and quantum discoveries."
 )]
 struct Args {
     #[arg(long, default_value = DEFAULT_HOST)]
@@ -15,23 +15,27 @@ struct Args {
     #[arg(short, long, default_value_t = DEFAULT_PORT)]
     port: u16,
 
-    /// Número de threads de CPU dedicadas à aceleração
+    /// Initial number of CPU threads dedicated to acceleration
     #[arg(short, long, default_value_t = 2)]
     threads: usize,
 
-    /// Intensidade de processamento de CPU por thread (5 a 100%)
+    /// CPU processing intensity per thread (5 to 100%)
     #[arg(short, long, default_value_t = 70)]
     intensity: u8,
 
-    /// Modo de aceleração inicial (linac, synchrotron, plasma, quantum)
+    /// Initial acceleration mode (linac, synchrotron, plasma, quantum)
     #[arg(short, long, default_value = "synchrotron")]
     mode: String,
 
-    /// Oculta saída periódica no console
+    /// Run in plain text stdout mode instead of the interactive mouse-clickable TUI deck
+    #[arg(long)]
+    headless: bool,
+
+    /// Suppress periodic stdout logs in headless mode
     #[arg(short, long)]
     quiet: bool,
 
-    /// Executa apenas por N segundos e encerra
+    /// Run for N seconds and exit (automatically uses headless mode)
     #[arg(long)]
     duration_secs: Option<u64>,
 }
@@ -48,6 +52,7 @@ fn main() -> std::io::Result<()> {
         initial_intensity: args.intensity,
         initial_mode,
         quiet: args.quiet,
+        headless: args.headless,
         duration_secs: args.duration_secs,
     })
 }

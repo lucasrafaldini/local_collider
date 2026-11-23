@@ -5,32 +5,41 @@ pub const DEFAULT_PORT: u16 = 7878;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AccelerationMode {
-    /// Alta estabilidade de fase, aceleração progressiva e baixa divergência.
+    /// High phase stability, progressive linear acceleration, low beam divergence.
     LinearLinac,
-    /// Anel síncrotron magnético: equilibra fator de Lorentz (γ) e luminosidade de colisão.
+    /// Magnetic synchrotron ring: balances Lorentz factor (γ) and collision luminosity.
     SynchrotronHarmonic,
-    /// Surfe em onda de plasma a laser: picos extremos de TeV com maior entropia de feixe.
+    /// Laser plasma wakefield surfing: extreme TeV energy spikes with higher beam entropy.
     PlasmaWakefield,
-    /// Modulação harmônica de vácuo: converte velocidade extrema (β -> 1) em tunelamento quântico.
+    /// Quantum vacuum harmonic modulation: trades raw stability for quantum tunneling at high γ.
     QuantumResonance,
 }
 
 impl AccelerationMode {
     pub fn name(&self) -> &'static str {
         match self {
-            Self::LinearLinac => "Linac RF Estável",
-            Self::SynchrotronHarmonic => "Síncrotron Harmônico (Anel)",
-            Self::PlasmaWakefield => "Plasma Wakefield (Surfe Laser)",
-            Self::QuantumResonance => "Ressonância de Vácuo Quântico",
+            Self::LinearLinac => "Stable RF Linac",
+            Self::SynchrotronHarmonic => "Harmonic Synchrotron Ring",
+            Self::PlasmaWakefield => "Laser Plasma Wakefield",
+            Self::QuantumResonance => "Quantum Vacuum Resonance",
+        }
+    }
+
+    pub fn short_name(&self) -> &'static str {
+        match self {
+            Self::LinearLinac => "RF Linac",
+            Self::SynchrotronHarmonic => "Synchrotron",
+            Self::PlasmaWakefield => "Plasma Wake",
+            Self::QuantumResonance => "Quantum Res",
         }
     }
 
     pub fn description(&self) -> &'static str {
         match self {
-            Self::LinearLinac => "Alta estabilidade (98%), ideal para partículas leves e calibração de fase.",
-            Self::SynchrotronHarmonic => "Equilíbrio clássico de anel: alta luminosidade e colisões constantes.",
-            Self::PlasmaWakefield => "Multiplica energia de pico (TeV) em 2.4x, mas reduz estabilidade do feixe.",
-            Self::QuantumResonance => "Foca em efeito túnel e anomalias quânticas (2.8x chance quântica em alto γ).",
+            Self::LinearLinac => "High phase stability (98%), ideal for light particles & calibration.",
+            Self::SynchrotronHarmonic => "Balanced magnetic ring: high luminosity & steady collision rate.",
+            Self::PlasmaWakefield => "2.4x peak TeV energy multiplier with higher phase instability.",
+            Self::QuantumResonance => "Maximizes quantum tunneling & exotic anomaly drops (2.85x at high γ).",
         }
     }
 
@@ -43,12 +52,21 @@ impl AccelerationMode {
         }
     }
 
+    pub fn all() -> [Self; 4] {
+        [
+            Self::LinearLinac,
+            Self::SynchrotronHarmonic,
+            Self::PlasmaWakefield,
+            Self::QuantumResonance,
+        ]
+    }
+
     pub fn from_slug(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "linac" | "linear" | "1" => Some(Self::LinearLinac),
-            "synchrotron" | "sincrotron" | "ring" | "2" => Some(Self::SynchrotronHarmonic),
+            "synchrotron" | "ring" | "2" => Some(Self::SynchrotronHarmonic),
             "plasma" | "wakefield" | "3" => Some(Self::PlasmaWakefield),
-            "quantum" | "quantico" | "resonance" | "4" => Some(Self::QuantumResonance),
+            "quantum" | "resonance" | "4" => Some(Self::QuantumResonance),
             _ => None,
         }
     }
@@ -62,9 +80,13 @@ pub enum EngineCommand {
     SetMode(AccelerationMode),
     CycleMode,
     AdjustMagnetFocus(f64),
+    SetMagnetFocus(f64),
     AdjustRfHarmonic(f64),
+    SetRfHarmonic(f64),
+    LockOptimalHarmonic,
     TriggerPulseBurst,
     ResetState,
+    Batch(Vec<EngineCommand>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +111,8 @@ pub struct ShowerTrack {
     pub speed: f64,
     pub energy_ratio: f64,
     pub kind: TrackKind,
+    /// Optional secondary decay vertex fraction (0.3..0.7 along track) for boson decay forks
+    pub decay_fork_at: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -121,7 +145,7 @@ pub struct TelemetrySnapshot {
     pub gflops: f64,
     pub total_compute_cycles: u64,
 
-    // Accelerator Config ("Como acelera")
+    // Accelerator Config ("How it accelerates")
     pub mode: AccelerationMode,
     pub magnet_focus: f64,
     pub rf_harmonic: f64,

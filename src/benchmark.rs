@@ -4,8 +4,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-/// Motor de processamento real de CPU que converte ciclos (SHA-256 + Tensores de Lorentz FMA)
-/// em energia de feixe e entropia quântica verificável.
+/// Real CPU compute engine converting hardware cycles (SHA-256 + 4x4 Lorentz FMA tensors)
+/// into relativistic beam energy and verifiable quantum entropy.
 pub struct CpuComputePool {
     max_threads: usize,
     active_threads: Arc<AtomicUsize>,
@@ -56,7 +56,7 @@ impl CpuComputePool {
                         entropy_pool,
                     );
                 })
-                .expect("Falha ao iniciar thread de cavidade RF");
+                .expect("Failed to spawn RF cavity compute thread");
         }
 
         Self {
@@ -99,11 +99,7 @@ impl CpuComputePool {
         self.entropy_pool.load(Ordering::Relaxed)
     }
 
-    pub fn total_hashes(&self) -> u64 {
-        self.total_hashes.load(Ordering::Relaxed)
-    }
-
-    /// Coleta a taxa real de Hashes/s e GFLOPS desde a última medição.
+    /// Samples real Hashes/s and GFLOPS since the last measurement window.
     pub fn sample_rates(&mut self) -> (f64, f64, u64) {
         let now = Instant::now();
         let dt = now
@@ -142,13 +138,8 @@ fn worker_loop(
     entropy_pool: Arc<AtomicU64>,
 ) {
     let mut nonce: u64 = (worker_id as u64 + 1).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-    // Vetor de estado relativístico 4D (E/c, px, py, pz) simulado em ponto flutuante
-    let mut p = [
-        1.0 + worker_id as f64 * 0.13,
-        0.42,
-        -0.31,
-        0.89,
-    ];
+    // 4D relativistic state vector (E/c, px, py, pz)
+    let mut p = [1.0 + worker_id as f64 * 0.13, 0.42, -0.31, 0.89];
 
     let cycle_window = Duration::from_millis(25);
 
@@ -168,7 +159,6 @@ fn worker_loop(
         let mut local_entropy: u64 = 0;
 
         while burst_start.elapsed() < work_budget {
-            // Bloco de 64 iterações combinando SHA-256 real + transformações de Lorentz 4x4 FMA
             for _ in 0..64 {
                 nonce = nonce.wrapping_add(1);
                 let mut hasher = Sha256::new();
@@ -183,7 +173,7 @@ fn worker_loop(
                 local_entropy ^= lane;
                 local_hashes += 1;
 
-                // 32 rodadas de álgebra de feixe (16 FLOPs por rodada = 512 FLOPs por hash)
+                // 32 rounds of 4x4 Lorentz beam matrix algebra (512 FLOPs per hash)
                 let angle = ((lane & 0xFFFF) as f64) * 1e-5;
                 let s = angle.sin();
                 let c = angle.cos();
